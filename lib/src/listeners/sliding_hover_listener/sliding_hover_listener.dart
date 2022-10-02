@@ -16,7 +16,7 @@ class SlidingHoverListener extends StatefulWidget {
     Key? key,
     required this.child,
     required this.escapeHover,
-    this.width = 300,
+    this.width,
     this.axis = SlidingAxis.horizontal,
     this.animationDuration,
     this.height,
@@ -46,18 +46,24 @@ class _SlidingHoverListenerState extends State<SlidingHoverListener> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: maxExtent,
+      width: axis == SlidingAxis.horizontal ? maxExtent : null,
+      height: axis == SlidingAxis.vertical ? maxExtent : null,
       child: MouseRegion(
         onHover: widget.escapeHover
             ? (PointerHoverEvent event) => setNextPositionRelativeToHoverOffset(
                   event.localPosition,
                 )
             : null,
-        child: AnimatedAlign(
-          duration:
-              widget.animationDuration ?? const Duration(milliseconds: 100),
-          alignment: widget.escapeHover ? childAlignment : Alignment.center,
-          child: widget.child,
+        child: ValueListenableBuilder<Alignment>(
+          valueListenable: childAlignmentNotifier,
+          builder: (context, alignment, _) {
+            return AnimatedAlign(
+              duration:
+                  widget.animationDuration ?? const Duration(milliseconds: 100),
+              alignment: widget.escapeHover ? alignment : Alignment.center,
+              child: widget.child,
+            );
+          },
         ),
       ),
     );
@@ -65,40 +71,37 @@ class _SlidingHoverListenerState extends State<SlidingHoverListener> {
 
   void setNextPositionRelativeToHoverOffset(Offset hoverOffset) {
     final double thirdWidth = maxExtent / 3;
+    final double directionalHoverOffset =
+        axis == SlidingAxis.horizontal ? hoverOffset.dx : hoverOffset.dy;
 
     ///if in the left extreme of the max space
-    if (hoverOffset.dx < thirdWidth) {
-      if (childAlignment != maxExtremeAlignment) {
-        setState(() {
-          childAlignment = Alignment.center;
-        });
+    if (directionalHoverOffset < thirdWidth) {
+      if (childAlignmentNotifier.value != maxExtremeAlignment) {
+        childAlignmentNotifier.value = Alignment.center;
       }
     }
 
     ///if in the middle of the max space
-    else if (hoverOffset.dx > thirdWidth && hoverOffset.dx < (thirdWidth * 2)) {
-      setState(() {
-        final double currentCenterXOffset = hoverOffset.dx - thirdWidth;
+    else if (directionalHoverOffset > thirdWidth &&
+        directionalHoverOffset < (thirdWidth * 2)) {
+      final double currentCenterXOffset = directionalHoverOffset - thirdWidth;
 
-        final double percentCenterXOffset = thirdWidth.percent(
-          currentCenterXOffset,
-        );
+      final double percentCenterXOffset = thirdWidth.percent(
+        currentCenterXOffset,
+      );
 
-        ///if the greater half of the middle of the max space
-        if (percentCenterXOffset > 50) {
-          childAlignment = minExtremeAlignment;
-        } else {
-          childAlignment = maxExtremeAlignment;
-        }
-      });
+      ///if the greater half of the middle of the max space
+      if (percentCenterXOffset > 50) {
+        childAlignmentNotifier.value = minExtremeAlignment;
+      } else {
+        childAlignmentNotifier.value = maxExtremeAlignment;
+      }
     }
 
     ///if at the right extreme of the max space
     else {
-      if (childAlignment != minExtremeAlignment) {
-        setState(() {
-          childAlignment = Alignment.center;
-        });
+      if (childAlignmentNotifier.value != minExtremeAlignment) {
+        childAlignmentNotifier.value = Alignment.center;
       }
     }
   }
@@ -115,5 +118,6 @@ class _SlidingHoverListenerState extends State<SlidingHoverListener> {
         : Alignment.centerLeft;
   }
 
-  Alignment childAlignment = Alignment.center;
+  ValueNotifier<Alignment> childAlignmentNotifier =
+      ValueNotifier(Alignment.center);
 }
