@@ -1,0 +1,4 @@
+enum SlidingAxis {
+  vertical,
+  horizontal,
+}
