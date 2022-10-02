@@ -70,11 +70,16 @@ class _DisappearingHoverListenerState extends State<DisappearingHoverListener> {
     Size widgetSize,
   ) async {
     if (isAnimating) return;
-    if (!(hoverOffset.isWithinBoundsOf(widgetSize))) return;
-    opacityNotifier.value = minOpacity;
-    isAnimating = true;
-    await Future.delayed(duration);
-    isAnimating = false;
-    opacityNotifier.value = 1.0;
+    if (hoverOffset.isWithinBoundsOf(widgetSize)) {
+      opacityNotifier.value = minOpacity;
+      isAnimating = true;
+      await Future.delayed(duration);
+      isAnimating = false;
+    } else {
+      opacityNotifier.value = 1.0;
+      isAnimating = true;
+      await Future.delayed(duration);
+      isAnimating = false;
+    }
   }
 }
